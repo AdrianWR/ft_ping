@@ -15,12 +15,15 @@ SRC			= $(shell find $(SRC_DIR) -type f -name "*.c")
 OBJ_DIR	= ./build
 OBJ 		= $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
+INCLUDE_DIR = ./include
+INCLUDE = $(shell find $(INCLUDE_DIR) -type f -name "*.h")
+
 all: $(NAME)
 
 $(NAME): $(OBJ)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $^
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
