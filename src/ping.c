@@ -88,6 +88,11 @@ int ping(char *destination, t_options options)
     return errno;
   }
 
+  struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
+
+  // set socket timeout
+  setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof timeout);
+
   int packet_size = sizeof(struct iphdr) + sizeof(struct icmphdr) + payload_size;
   char *packet = malloc(packet_size);
   if (!packet)
@@ -118,15 +123,24 @@ int ping(char *destination, t_options options)
   icmp->code = 0;
   icmp->un.echo.id = getpid();
 
-#define NB_PACKET 2
+#define NB_PACKET 3
 
   for (sent = 0; sent < NB_PACKET; ++sent)
   {
     // set icmp header checksum
-    // ft_memset(packet + sizeof(struct iphdr) + sizeof(struct icmphdr), rand() % 255, payload_size);
+    ft_memset(packet + sizeof(struct iphdr) + sizeof(struct icmphdr), rand() % 255, payload_size);
     icmp->un.echo.sequence = sequence_number(sent);
     icmp->checksum = 0;
     icmp->checksum = ft_checksum((unsigned short *)icmp, sizeof(struct icmphdr) + payload_size);
+
+    // set icmp timestamp
+    struct timeval *timestamp = (struct timeval *)(packet + sizeof(struct iphdr) + sizeof(struct icmphdr) + payload_size);
+    gettimeofday(timestamp, NULL);
+
+    // get start time
+    struct timeval start_time;
+
+    gettimeofday(&start_time, NULL);
 
     // send packet
     if ((sent_size = sendto(sockfd, packet, packet_size, 0, daddr->ai_addr, daddr->ai_addrlen)) < 1)
@@ -138,54 +152,36 @@ int ping(char *destination, t_options options)
     printf("Sent %zu bytes to %s\n", sent_size, destination);
 
     // listen for response
-    while (true)
+
+    // Clean packet
+    ft_memset(packet, 0, packet_size);
+
+    // Read socket with recvmsg
+    struct msghdr msg;
+    struct sockaddr_in sender;
+    struct cmsghdr control_buffer;
+
+    struct iovec iov = {.iov_base = packet, .iov_len = packet_size};
+    msg.msg_name = &sender;
+    msg.msg_namelen = sizeof sender;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = &control_buffer;
+    msg.msg_controllen = sizeof control_buffer;
+    msg.msg_flags = 0;
+    (void)msg;
+
+    // receive packet
+    if ((recv(sockfd, packet, packet_size, 0)) < 0)
     {
-      struct sockaddr_in sender;
-      socklen_t sender_len = sizeof sender;
-      struct timeval timeout = {.tv_sec = 1, .tv_usec = 0};
-
-      // set timeout
-      setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof timeout);
-
-      // receive packet
-      if ((error = recvfrom(sockfd, packet, packet_size, 0, (struct sockaddr *)&sender, &sender_len)) < 0)
-      {
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-          printf("Timeout\n");
-          break;
-        }
-        else
-        {
-          print_error("recvfrom", strerror(errno));
-          return errno;
-        }
-      }
-
-      // check if packet is from destination
-      if (sender.sin_addr.s_addr == ((struct sockaddr_in *)daddr->ai_addr)->sin_addr.s_addr)
-      {
-        printf("Received %d bytes from %s\n", error, destination);
-        break;
-      }
-
-      // check if packet is from source and is an echo reply
-      if (sender.sin_addr.s_addr == ((struct sockaddr_in *)saddr->ai_addr)->sin_addr.s_addr)
-      {
-        struct iphdr *iphdr = (struct iphdr *)packet;
-        struct icmp *pkt = (struct icmp *)(packet + (iphdr->ihl << 2));
-
-        if (pkt->icmp_type == ICMP_ECHOREPLY)
-        {
-          printf("Received %d bytes from %s\n", error, destination);
-          break;
-        }
-      }
-      usleep(1000);
+      print_error("recvmsg", strerror(errno));
+      return errno;
     }
 
-    usleep(1000000);
+    usleep(1000);
   }
+
+  usleep(1000000);
 
   free(packet);
   freeaddrinfo(saddr);
