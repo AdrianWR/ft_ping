@@ -5,7 +5,7 @@ NAME = ft_ping
 CC = gcc
 
 CFLAGS		= -Wall -Wextra -Werror
-CPPFLAGS	= -I./include
+CPPFLAGS	= -g -I./include
 
 LDFLAGS		=
 

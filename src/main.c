@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <stdbool.h>
 #include "ping.h"
+#include <stdbool.h>
+#include <stdio.h>
 
 char *parse_params(size_t argc, char *argv[], t_options *options)
 {
@@ -12,7 +12,7 @@ char *parse_params(size_t argc, char *argv[], t_options *options)
     {
       switch (argv[optind][i])
       {
-      case 'h':
+      case '?':
         *options |= HELP_FLAG;
         break;
       case 'v':

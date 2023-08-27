@@ -1,11 +1,56 @@
+#include <netinet/ip_icmp.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "ping.h"
 
 unsigned short sequence_number(unsigned short seq)
 {
-  // sequence number is incremented by 1 for each packet sent
   // if little endian, swap bytes
-  seq++;
   if (*(uint16_t *)"\0\xff" > 0x100)
     return ((seq & 0xff) << 8) | ((seq & 0xff00) >> 8);
   return seq;
+}
+
+void icmp_packet(char *packet, size_t packet_size, unsigned short seq)
+{
+  struct icmphdr *icmp_header;
+
+  ft_memset(packet, 0, packet_size);
+  icmp_header = (struct icmphdr *)packet;
+  icmp_header->type = ICMP_ECHO;
+  icmp_header->code = 0;
+  icmp_header->un.echo.id = getpid();
+  icmp_header->un.echo.sequence = sequence_number(seq);
+
+  // set packet payload as current time and
+  // pad next packet bytes with incrementing pattern
+  gettimeofday((struct timeval *)(packet + sizeof(struct icmphdr)), NULL);
+  for (size_t i = 0; i < packet_size - sizeof(struct icmphdr) + sizeof(struct timeval); i++)
+    packet[sizeof(struct icmphdr) + sizeof(struct timeval) + i] = i;
+
+  icmp_header->checksum = 0;
+  icmp_header->checksum = ft_checksum((unsigned short *)icmp_header, packet_size);
+}
+
+struct msghdr message_header(char *packet, size_t packet_size)
+{
+  struct msghdr msg;
+  struct sockaddr_in sender;
+  struct cmsghdr control_buffer;
+
+  ft_memset(&sender, 0, sizeof sender);
+
+  struct iovec iov = {.iov_base = packet, .iov_len = packet_size};
+  msg.msg_name = &sender;
+  msg.msg_namelen = sizeof sender;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+  msg.msg_control = &control_buffer;
+  msg.msg_controllen = sizeof control_buffer;
+  msg.msg_flags = 0;
+
+  return msg;
 }

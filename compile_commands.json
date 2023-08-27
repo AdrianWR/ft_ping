@@ -1,0 +1,138 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/utils.o",
+      "src/utils.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/utils.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/utils.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/time.o",
+      "src/time.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/time.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/time.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/checksum.o",
+      "src/checksum.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/checksum.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/checksum.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/print.o",
+      "src/print.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/print.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/print.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/icmp.o",
+      "src/icmp.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/icmp.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/icmp.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/main.o",
+      "src/main.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/main.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/ping.o",
+      "src/ping.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/ping.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/ping.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-g",
+      "-I./include",
+      "-c",
+      "-o",
+      "build/receive.o",
+      "src/receive.c"
+    ],
+    "directory": "/mnt/home/aroque/activities/ft_ping",
+    "file": "/mnt/home/aroque/activities/ft_ping/src/receive.c",
+    "output": "/mnt/home/aroque/activities/ft_ping/build/receive.o"
+  }
+]

@@ -15,9 +15,12 @@ struct timeval time_diff(struct timeval start, struct timeval end)
   return diff;
 }
 
-const char *sprint_timeval_ms(struct timeval tv)
+char *sprint_timeval_ms(struct timeval tv)
 {
   static char buf[30];
-  sprintf(buf, "%ld.%03ld", tv.tv_sec, tv.tv_usec / 1000);
+  int sec;
+
+  sec = tv.tv_sec;
+  sprintf(buf, "%ld,%03ld", sec * 1000 + (tv.tv_usec / 1000), tv.tv_usec % 1000);
   return buf;
 }
