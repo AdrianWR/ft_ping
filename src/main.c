@@ -31,7 +31,7 @@ int help()
   printf("Usage\n\tping [options] <destination>\n\n");
   printf("Options:\n");
   printf("\t<destination>\tdns name or ip address\n");
-  printf("\t-h\t\tprint help and exit\n");
+  printf("\t-?\t\tprint help and exit\n");
   printf("\t-v\t\tverbose output\n");
   return 2;
 }
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
   char *destination;
   t_options options;
 
+  options = 0;
   destination = parse_params(argc, argv, &options);
 
   if (options & HELP_FLAG)
@@ -48,8 +49,10 @@ int main(int argc, char *argv[])
 
   if (destination == NULL)
   {
-    print_error("usage_error", "Destination address required");
-    return 1;
+    fprintf(stdout, "ping: missing host operand\n");
+    fprintf(stdout, "Try 'ping -?' for more information.\n");
+
+    return 64;
   }
 
   return ping(destination, options);

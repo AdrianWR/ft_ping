@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "ping.h"
 
@@ -23,7 +25,7 @@ void icmp_packet(char *packet, size_t packet_size, unsigned short seq)
   icmp_header->type = ICMP_ECHO;
   icmp_header->code = 0;
   icmp_header->un.echo.id = getpid();
-  icmp_header->un.echo.sequence = sequence_number(seq);
+  icmp_header->un.echo.sequence = htons(seq);
 
   // set packet payload as current time and
   // pad next packet bytes with incrementing pattern
@@ -38,16 +40,16 @@ void icmp_packet(char *packet, size_t packet_size, unsigned short seq)
 struct msghdr message_header(char *packet, size_t packet_size)
 {
   struct msghdr msg;
-  struct sockaddr_in sender;
   struct cmsghdr control_buffer;
+  struct iovec iov;
 
-  ft_memset(&sender, 0, sizeof sender);
+  iov.iov_base = packet;
+  iov.iov_len = packet_size;
 
-  struct iovec iov = {.iov_base = packet, .iov_len = packet_size};
-  msg.msg_name = &sender;
-  msg.msg_namelen = sizeof sender;
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
+  msg.msg_name = NULL;
+  msg.msg_namelen = 0;
   msg.msg_control = &control_buffer;
   msg.msg_controllen = sizeof control_buffer;
   msg.msg_flags = 0;

@@ -19,10 +19,9 @@ bool ping_loop = true;
 void handle_sigint()
 {
   ping_loop = false;
-  exit(0);
 }
 
-int addr_lookup(const char *addr, struct addrinfo **addrinfo)
+static int addr_lookup(const char *addr, struct addrinfo **addrinfo)
 {
   struct addrinfo hints;
   int status;
@@ -34,13 +33,29 @@ int addr_lookup(const char *addr, struct addrinfo **addrinfo)
 
   if ((status = (getaddrinfo(addr, NULL, &hints, addrinfo))) != 0)
   {
-    print_error(addr, gai_strerror(status));
-    return 2;
+    if (status == EAI_AGAIN)
+      fprintf(stderr, "ping: unknown host\n");
+    else
+      fprintf(stderr, "ping: %s: %s\n", addr, gai_strerror(status));
+    return 1;
   }
 
-  if ((*addrinfo)->ai_family != AF_INET)
+  return 0;
+}
+
+static int new_ping_socket(int *sockfd)
+{
+  // new socket for raw icmp packets
+  if ((*sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
   {
-    print_error("destination", "Address family for hostname not supported.");
+    fprintf(stderr, "ping: socket: %s\n", strerror(errno));
+    return 1;
+  }
+
+  // set socket option to allow datagram broadcast
+  if ((setsockopt(*sockfd, SOL_SOCKET, SO_BROADCAST, &(int){1}, sizeof(int))) < 0)
+  {
+    fprintf(stderr, "ping: setsockopt: %s\n", strerror(errno));
     return 1;
   }
 
@@ -49,93 +64,74 @@ int addr_lookup(const char *addr, struct addrinfo **addrinfo)
 
 int ping(char *destination, t_options options)
 {
-  int error;
   int sockfd;
   struct addrinfo *addr;
   char *packet;
+  size_t packet_size;
   const char *ipv4_address;
   struct msghdr msghdr;
-
-  size_t sent_size;
-  size_t payload_size = DEFAULT_PAYLOAD_SIZE;
-
-  (void)options;
-  signal(SIGINT, handle_sigint);
-
   unsigned int sent;
   unsigned int received;
+  size_t payload_size;
+  float rtt;
+  float stats[4];
+
+  signal(SIGINT, handle_sigint);
+  payload_size = DEFAULT_PAYLOAD_SIZE;
+
+  // create socket
+  if (new_ping_socket(&sockfd) != 0)
+    return 1;
 
   // lookup destination ipv4 address
-  if ((error = addr_lookup(destination, &addr)) != 0)
-    return error;
+  if ((addr_lookup(destination, &addr)) != 0)
+    return 1;
   ipv4_address = inet_ntop(AF_INET, &((struct sockaddr_in *)addr->ai_addr)->sin_addr,
                            (char[INET_ADDRSTRLEN]){0}, INET_ADDRSTRLEN);
 
-  // new socket for raw icmp packets
-  if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
-  {
-    print_error("socket", strerror(errno));
-    return errno;
-  }
-
-  // set socket option to allow datagram broadcast
-  if ((error = setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &(int){1},
-                          sizeof(int))) < 0)
-  {
-    print_error("setsockopt", strerror(errno));
-    return errno;
-  }
-
-  // set socket timeout
-  // struct timeval timeout = {.tv_sec = 3, .tv_usec = 0};
-  // setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout,
-  // sizeof timeout);
-
-  size_t packet_size = sizeof(struct icmphdr) + payload_size;
+  packet_size = sizeof(struct icmphdr) + payload_size;
   if (!(packet = malloc(packet_size)))
   {
-    print_error("malloc", strerror(errno));
-    return errno;
+    fprintf(stderr, "ping: malloc: %s\n", strerror(errno));
+    return 1;
   }
-
-  print_ping_start(destination, ipv4_address, payload_size);
 
   sent = 0;
   received = 0;
-  while (ping_loop && sent < 3)
+  print_ping_start(destination, ipv4_address, payload_size, options);
+  while (ping_loop)
   {
-    // create icmp packet
-    icmp_packet(packet, packet_size, sent);
-
-    // send packet
-    if ((sent_size = sendto(sockfd, packet, packet_size, 0, addr->ai_addr,
-                            addr->ai_addrlen)) < 1)
+    // create icmp packet and send
+    icmp_packet(packet, packet_size, received);
+    if ((sendto(sockfd, packet,
+                packet_size, 0, addr->ai_addr, addr->ai_addrlen)) < 1)
     {
-      print_error("sendto", strerror(errno));
-      return errno;
+      fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+      return 1;
     }
     sent++;
 
     // receive packet
     ft_memset(packet, 0, packet_size);
     msghdr = message_header(packet, packet_size);
-
     if (recvmsg(sockfd, &msghdr, 0) < 0)
     {
-      print_error("recvmsg", strerror(errno));
-      return errno;
+      fprintf(stderr, "ping: recvmsg: %s\n", strerror(errno));
+      usleep(1000000);
+      continue;
     }
-
-    print_ping(packet_size, ipv4_address, &msghdr);
+    print_ping(packet_size, ipv4_address, &msghdr, &rtt);
     received++;
+
+    ft_memcpy(stats, ping_statistics(rtt, received), sizeof stats);
 
     // wait 1 second before sending next packet
     usleep(1000000);
   }
 
-  usleep(10);
-
-  print_ping_statistics(sent, received);
+  print_ping_statistics(destination, sent, received);
+  printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
+         stats[0], stats[1], stats[2], stats[3]);
 
   free(packet);
   freeaddrinfo(addr);

@@ -2,12 +2,12 @@
 
 NAME = ft_ping
 
-CC = gcc
+CC = clang
 
 CFLAGS		= -Wall -Wextra -Werror
-CPPFLAGS	= -g -I./include
+CPPFLAGS	= -I./include
 
-LDFLAGS		=
+LDFLAGS		= -lm
 
 SRC_DIR	= ./src
 SRC			= $(shell find $(SRC_DIR) -type f -name "*.c")

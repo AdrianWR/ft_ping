@@ -10,7 +10,7 @@ For anyone who had to work in debugging network issues, given them simple or as 
 
 ## Compilation
 
-This project requires GNU Make and GCC (or Clang) to compile. To compile, run `make` or `make all` from the root of the repository.
+This project requires GNU Make and `clang` to compile. Using C99 won't compile the binary, as we are using some new netowrk functions to provide the DNS resolution (namely `getaddrinfo`). To compile, run `make` or `make all` from the repository root directory.
 
 ```
 git clone
@@ -22,6 +22,10 @@ Given no issue with the compilation, the binary `ft_ping` will be created at the
 
 ## Usage
 
+As we need to open a raw socket to send and receive ICMP packets, `ft_ping` must be run as root. The program takes a single argument, the destination to ping, which can be either an IP address or a hostname. The program will resolve the hostname to an IP address using the `getaddrinfo` function.
+
 ```
-./ft_ping [-h] [-v] [-c count] [-i interval] [-t ttl] destination
+# ./ft_ping [-?] [-v] destination
 ```
+
+You may use the `-?` flag to display the help message, and the `-v` flag to enable verbose mode. Verbose mode will display the identifier of the ICMP packet, along with some additional information in case of errors.
