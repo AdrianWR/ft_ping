@@ -1,8 +1,13 @@
 #include "ping.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
 
-char *parse_params(size_t argc, char *argv[], t_options *options)
+t_ping *g_ping;
+
+char *parse_params(size_t argc, char *argv[], unsigned int *options)
 {
   size_t optind;
   for (optind = 1; optind < argc && argv[optind][0] == '-'; optind++)
@@ -39,7 +44,7 @@ int help()
 int main(int argc, char *argv[])
 {
   char *destination;
-  t_options options;
+  unsigned int options;
 
   options = 0;
   destination = parse_params(argc, argv, &options);
@@ -52,8 +57,18 @@ int main(int argc, char *argv[])
     fprintf(stdout, "ping: missing host operand\n");
     fprintf(stdout, "Try 'ping -?' for more information.\n");
 
-    return 64;
+    return 1;
   }
 
-  return ping(destination, options);
+  if (!(g_ping = malloc(sizeof(t_ping))))
+  {
+    fprintf(stderr, "ping: malloc: %s\n", strerror(errno));
+    return 1;
+  }
+  ft_memset(g_ping, 0, sizeof(t_ping));
+
+  g_ping->destination = destination;
+  g_ping->options = options;
+
+  return ping(g_ping);
 }

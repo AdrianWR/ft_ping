@@ -8,16 +8,9 @@
 
 #include "ping.h"
 
-unsigned short sequence_number(unsigned short seq)
+void icmp_packet(char *packet, size_t packet_size)
 {
-  // if little endian, swap bytes
-  if (*(uint16_t *)"\0\xff" > 0x100)
-    return ((seq & 0xff) << 8) | ((seq & 0xff00) >> 8);
-  return seq;
-}
-
-void icmp_packet(char *packet, size_t packet_size, unsigned short seq)
-{
+  static unsigned short id = 0;
   struct icmphdr *icmp_header;
 
   ft_memset(packet, 0, packet_size);
@@ -25,13 +18,13 @@ void icmp_packet(char *packet, size_t packet_size, unsigned short seq)
   icmp_header->type = ICMP_ECHO;
   icmp_header->code = 0;
   icmp_header->un.echo.id = getpid();
-  icmp_header->un.echo.sequence = htons(seq);
+  icmp_header->un.echo.sequence = htons(id++);
 
   // set packet payload as current time and
   // pad next packet bytes with incrementing pattern
   gettimeofday((struct timeval *)(packet + sizeof(struct icmphdr)), NULL);
-  for (size_t i = 0; i < packet_size - sizeof(struct icmphdr) + sizeof(struct timeval); i++)
-    packet[sizeof(struct icmphdr) + sizeof(struct timeval) + i] = i;
+  for (size_t i = sizeof(struct icmphdr) + sizeof(struct timeval); i < packet_size; i++)
+    packet[i] = i - sizeof(struct icmphdr) - sizeof(struct timeval);
 
   icmp_header->checksum = 0;
   icmp_header->checksum = ft_checksum((unsigned short *)icmp_header, packet_size);

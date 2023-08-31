@@ -4,9 +4,9 @@
 
 ## Description
 
-ft_ping is a recreation of the ping command. It sends ICMP ECHO_REQUEST packets to network hosts and listens for ICMP ECHO_REPLY responses. It measures the round-trip time and packet loss statistics.
+ft_ping is a recreation of the ping command. It sends ICMP ECHO request packets to network hosts and listens for ICMP ECHO_REPLY responses. It measures the round-trip time and packet loss statistics.
 
-For anyone who had to work in debugging network issues, given them simple or as complex as the internet, this tool is a must have. As every machine is capable of sending and receiving ICMP packets, we may use this to test the reachability of a host on an IP network, and how long it takes to get there.
+For anyone who had to work in debugging network issues, given them simple or as complex as the internet, this tool is a must have. As almost every machine is capable of sending and receiving ICMP packets, we may use this to test the reachability of a host on an IP network, and how long it takes to get there.
 
 ## Compilation
 

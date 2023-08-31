@@ -21,7 +21,7 @@ static unsigned int get_sequence_number(struct msghdr *msgh)
   struct icmphdr *icmp_header;
 
   icmp_header = (struct icmphdr *)(msgh->msg_iov->iov_base + sizeof(struct iphdr));
-  return sequence_number(icmp_header->un.echo.sequence);
+  return htons(icmp_header->un.echo.sequence);
 }
 
 static float get_timestamp_diff(struct msghdr *msgh)
@@ -38,15 +38,17 @@ static float get_timestamp_diff(struct msghdr *msgh)
   return timeval_ms(time_diff(sent_time, now));
 }
 
-void print_ping_start(const char *destination, const char *ip_address, size_t payload_size, t_options options)
+void print_ping_start(t_ping *ping)
 {
   int pid;
 
-  pid = getpid();
-  printf("PING %s (%s): %zu data bytes", destination,
-         ip_address ? ip_address : "unknown", payload_size);
-  if (options & VERBOSE_FLAG)
+  // printf("IP address of %s is %s\n", destination, ip_address ? ip_address : "unknown");
+
+  printf("PING %s (%s): %zu data bytes", ping->destination,
+         ping->ip_address, (size_t)DEFAULT_PAYLOAD_SIZE);
+  if (ping->options & VERBOSE_FLAG)
   {
+    pid = getpid();
     printf(", id 0x%x = %d", pid, pid);
   }
   printf("\n");
@@ -65,14 +67,24 @@ void print_ping(size_t packet_size, const char *ipv4_address, struct msghdr *msg
          packet_size, ipv4_address, sequence_number, ttl, *rtt);
 }
 
-void print_ping_statistics(const char *destination, unsigned int sent, unsigned int received)
+void print_ping_statistics(t_ping *ping)
 {
   float loss;
 
-  if (sent == 0)
+  printf("--- %s ping statistics ---\n", ping->destination);
+  if (ping->sent == 0)
+  {
+    printf("0 packets transmitted, 0 received, 0%% packet loss\n");
     return;
-  loss = (sent - received) * 100 / (float)sent;
-  printf("--- %s ping statistics ---\n", destination);
-  printf("%d packets transmitted, %d received, %.1f%% packet loss\n", sent,
-         received, loss);
+  }
+
+  loss = (ping->sent - ping->received) * 100 / (float)ping->sent;
+  printf("%d packets transmitted, %d received, %.1f%% packet loss\n", ping->sent,
+         ping->received, loss);
+
+  if (ping->received > 0)
+  {
+    printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n",
+           ping->stats[0], ping->stats[1], ping->stats[2], ping->stats[3]);
+  }
 }

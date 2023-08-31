@@ -1,5 +1,4 @@
 #include "ping.h"
-
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -14,128 +13,94 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-bool ping_loop = true;
-
-void handle_sigint()
+void handle_interrupt(int signal)
 {
-  ping_loop = false;
+  if (signal == SIGINT)
+  {
+    g_ping->ping_loop = false;
+    print_ping_statistics(g_ping);
+
+    freeaddrinfo(g_ping->addrinfo);
+    free(g_ping->packet);
+    close(g_ping->sockfd);
+    free(g_ping);
+    exit(0);
+  }
 }
 
-static int addr_lookup(const char *addr, struct addrinfo **addrinfo)
+static void send_packet(t_ping *ping)
 {
-  struct addrinfo hints;
-  int status;
-
-  ft_memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_RAW;
-  hints.ai_protocol = IPPROTO_ICMP;
-
-  if ((status = (getaddrinfo(addr, NULL, &hints, addrinfo))) != 0)
+  // create icmp packet and send
+  icmp_packet(ping->packet, ping->packet_size);
+  if ((sendto(ping->sockfd, ping->packet, ping->packet_size, 0,
+              ping->addrinfo->ai_addr, ping->addrinfo->ai_addrlen)) < 1)
   {
-    if (status == EAI_AGAIN)
-      fprintf(stderr, "ping: unknown host\n");
-    else
-      fprintf(stderr, "ping: %s: %s\n", addr, gai_strerror(status));
-    return 1;
+    fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+    return;
   }
-
-  return 0;
+  ping->sent++;
 }
 
-static int new_ping_socket(int *sockfd)
+static void receive_message(t_ping *ping)
 {
-  // new socket for raw icmp packets
-  if ((*sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
-  {
-    fprintf(stderr, "ping: socket: %s\n", strerror(errno));
-    return 1;
-  }
-
-  // set socket option to allow datagram broadcast
-  if ((setsockopt(*sockfd, SOL_SOCKET, SO_BROADCAST, &(int){1}, sizeof(int))) < 0)
-  {
-    fprintf(stderr, "ping: setsockopt: %s\n", strerror(errno));
-    return 1;
-  }
-
-  return 0;
-}
-
-int ping(char *destination, t_options options)
-{
-  int sockfd;
-  struct addrinfo *addr;
-  char *packet;
-  size_t packet_size;
-  const char *ipv4_address;
-  struct msghdr msghdr;
-  unsigned int sent;
-  unsigned int received;
-  size_t payload_size;
   float rtt;
-  float stats[4];
+  struct msghdr msghdr;
+  struct icmphdr *icmp_header;
+  bool recv_loop;
 
-  signal(SIGINT, handle_sigint);
-  payload_size = DEFAULT_PAYLOAD_SIZE;
+  recv_loop = true;
+  ft_memset(ping->packet, 0, ping->packet_size);
+  msghdr = message_header(ping->packet, ping->packet_size);
 
-  // create socket
-  if (new_ping_socket(&sockfd) != 0)
-    return 1;
+  while (recv_loop)
+  {
+    if ((recvmsg(ping->sockfd, &msghdr, 0)) < 0)
+    {
+      // timeout, no packet received
+      if (errno != EAGAIN || errno != EWOULDBLOCK)
+        fprintf(stderr, "ping: recvmsg: %s\n", strerror(errno));
+      return;
+    }
 
-  // lookup destination ipv4 address
-  if ((addr_lookup(destination, &addr)) != 0)
-    return 1;
-  ipv4_address = inet_ntop(AF_INET, &((struct sockaddr_in *)addr->ai_addr)->sin_addr,
-                           (char[INET_ADDRSTRLEN]){0}, INET_ADDRSTRLEN);
+    icmp_header = (struct icmphdr *)(msghdr.msg_iov->iov_base + sizeof(struct iphdr));
+    if (icmp_header->type == ICMP_ECHOREPLY)
+    {
+      print_ping(ping->packet_size, ping->ip_address, &msghdr, &rtt);
+      ping->received++;
+      ft_memcpy(ping->stats, ping_statistics(rtt, ping->received), sizeof(ping->stats));
+      recv_loop = false;
+      // wait 1 second before sending next packet
+      usleep(1000000);
+    }
+  }
+}
 
-  packet_size = sizeof(struct icmphdr) + payload_size;
-  if (!(packet = malloc(packet_size)))
+int ping(t_ping *ping)
+{
+  signal(SIGINT, handle_interrupt);
+
+  ping->packet_size = sizeof(struct icmphdr) + DEFAULT_PAYLOAD_SIZE;
+  if (!(ping->packet = malloc(ping->packet_size)))
   {
     fprintf(stderr, "ping: malloc: %s\n", strerror(errno));
     return 1;
   }
 
-  sent = 0;
-  received = 0;
-  print_ping_start(destination, ipv4_address, payload_size, options);
-  while (ping_loop)
+  // create socket
+  if (new_ping_socket(&(ping->sockfd)) != 0)
+    return 1;
+
+  // lookup destination ipv4 address
+  if ((addr_lookup(ping)) != 0)
+    return 1;
+
+  print_ping_start(ping);
+  ping->ping_loop = true;
+  while (ping->ping_loop)
   {
-    // create icmp packet and send
-    icmp_packet(packet, packet_size, received);
-    if ((sendto(sockfd, packet,
-                packet_size, 0, addr->ai_addr, addr->ai_addrlen)) < 1)
-    {
-      fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
-      return 1;
-    }
-    sent++;
-
-    // receive packet
-    ft_memset(packet, 0, packet_size);
-    msghdr = message_header(packet, packet_size);
-    if (recvmsg(sockfd, &msghdr, 0) < 0)
-    {
-      fprintf(stderr, "ping: recvmsg: %s\n", strerror(errno));
-      usleep(1000000);
-      continue;
-    }
-    print_ping(packet_size, ipv4_address, &msghdr, &rtt);
-    received++;
-
-    ft_memcpy(stats, ping_statistics(rtt, received), sizeof stats);
-
-    // wait 1 second before sending next packet
-    usleep(1000000);
+    send_packet(ping);
+    receive_message(ping);
   }
-
-  print_ping_statistics(destination, sent, received);
-  printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms\n",
-         stats[0], stats[1], stats[2], stats[3]);
-
-  free(packet);
-  freeaddrinfo(addr);
-  close(sockfd);
 
   return 0;
 }
