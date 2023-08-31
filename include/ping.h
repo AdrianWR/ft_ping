@@ -13,6 +13,8 @@
 
 #define DEFAULT_PAYLOAD_SIZE 56
 #define DEFAULT_TTL 64
+#define DEFAULT_TIMEOUT 1
+#define DEFAULT_USLEEP 1000000
 
 typedef struct s_ping
 {

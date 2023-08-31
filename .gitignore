@@ -2,6 +2,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=c
 
 ft_ping
+.vscode/
+.cache/
 
 ### C ###
 # Prerequisites

@@ -15,16 +15,23 @@
 
 void handle_interrupt(int signal)
 {
+  int status;
+
+  if (signal == SIGQUIT)
+    exit(ENOTRECOVERABLE);
+
   if (signal == SIGINT)
   {
     g_ping->ping_loop = false;
     print_ping_statistics(g_ping);
+    status = g_ping->received == 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
     freeaddrinfo(g_ping->addrinfo);
     free(g_ping->packet);
     close(g_ping->sockfd);
     free(g_ping);
-    exit(0);
+
+    exit(status);
   }
 }
 
@@ -69,8 +76,9 @@ static void receive_message(t_ping *ping)
       ping->received++;
       ft_memcpy(ping->stats, ping_statistics(rtt, ping->received), sizeof(ping->stats));
       recv_loop = false;
+
       // wait 1 second before sending next packet
-      usleep(1000000);
+      usleep(DEFAULT_USLEEP);
     }
   }
 }
@@ -78,6 +86,7 @@ static void receive_message(t_ping *ping)
 int ping(t_ping *ping)
 {
   signal(SIGINT, handle_interrupt);
+  signal(SIGQUIT, handle_interrupt);
 
   ping->packet_size = sizeof(struct icmphdr) + DEFAULT_PAYLOAD_SIZE;
   if (!(ping->packet = malloc(ping->packet_size)))

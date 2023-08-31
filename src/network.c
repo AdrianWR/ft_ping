@@ -54,7 +54,7 @@ int new_ping_socket(int *sockfd)
   }
 
   // set receive timeout to 1 second
-  if ((setsockopt(*sockfd, SOL_SOCKET, SO_RCVTIMEO, &(struct timeval){1, 0}, sizeof(struct timeval))) < 0)
+  if ((setsockopt(*sockfd, SOL_SOCKET, SO_RCVTIMEO, &(struct timeval){DEFAULT_TIMEOUT, 0}, sizeof(struct timeval))) < 0)
   {
     fprintf(stderr, "ping: setsockopt: %s\n", strerror(errno));
     return 1;

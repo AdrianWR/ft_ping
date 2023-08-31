@@ -33,12 +33,14 @@ char *parse_params(size_t argc, char *argv[], unsigned int *options)
 
 int help()
 {
-  printf("Usage\n\tping [options] <destination>\n\n");
-  printf("Options:\n");
-  printf("\t<destination>\tdns name or ip address\n");
-  printf("\t-?\t\tprint help and exit\n");
-  printf("\t-v\t\tverbose output\n");
-  return 2;
+  printf("Usage: ping [OPTION...] HOST ...\n");
+  printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
+  printf("Options valid for all request types:\n\n");
+  printf(" -v\t\tverbose output\n\n");
+  printf("Options valid for --echo requests:\n\n");
+  printf(" -?\t\tgive this help list\n");
+
+  return 0;
 }
 
 int main(int argc, char *argv[])
@@ -57,15 +59,15 @@ int main(int argc, char *argv[])
     fprintf(stdout, "ping: missing host operand\n");
     fprintf(stdout, "Try 'ping -?' for more information.\n");
 
-    return 1;
+    return 64;
   }
 
-  if (!(g_ping = malloc(sizeof(t_ping))))
+  if (!(g_ping = malloc(sizeof(*g_ping))))
   {
     fprintf(stderr, "ping: malloc: %s\n", strerror(errno));
     return 1;
   }
-  ft_memset(g_ping, 0, sizeof(t_ping));
+  ft_memset(g_ping, 0, sizeof(*g_ping));
 
   g_ping->destination = destination;
   g_ping->options = options;
