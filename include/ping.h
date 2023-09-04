@@ -2,11 +2,11 @@
 #define PING_H
 
 #include <netinet/ip_icmp.h>
+#include <stdbool.h>
 #include <stdint.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <stdbool.h>
 
 #define HELP_FLAG 0x1
 #define VERBOSE_FLAG 0x2
@@ -16,8 +16,7 @@
 #define DEFAULT_TIMEOUT 1
 #define DEFAULT_USLEEP 1000000
 
-typedef struct s_ping
-{
+typedef struct s_ping {
   char *destination;
   struct addrinfo *addrinfo;
   int sockfd;
@@ -25,7 +24,6 @@ typedef struct s_ping
   bool ping_loop;
   unsigned int sent;
   unsigned int received;
-  float stats[4];
 
   char *packet;
   size_t packet_size;
@@ -49,7 +47,9 @@ void icmp_packet(char *packet, size_t packet_size);
 struct msghdr message_header(char *packet, size_t packet_size);
 float *ping_statistics(float rtt, int n);
 
-void print_ping(size_t packet_size, const char *ipv4_address, struct msghdr *msgh, float *rtt);
+void print_ping(size_t packet_size, const char *ipv4_address,
+                struct msghdr *msgh, float *rtt);
+void print_time_exceeded(struct msghdr *msgh);
 void print_ping_start(t_ping *ping);
 void print_ping_statistics(t_ping *ping);
 

@@ -7,7 +7,7 @@ CC = clang
 CFLAGS		= -Wall -Wextra -Werror
 CPPFLAGS	= -I./include
 
-LDFLAGS		= -lm
+LDFLAGS		=
 
 SRC_DIR	= ./src
 SRC			= $(shell find $(SRC_DIR) -type f -name "*.c")
