@@ -4,6 +4,7 @@
 ft_ping
 .vscode/
 .cache/
+compile_commands.json
 
 ### C ###
 # Prerequisites
