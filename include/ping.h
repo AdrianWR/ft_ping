@@ -47,9 +47,8 @@ void icmp_packet(char *packet, size_t packet_size);
 struct msghdr message_header(char *packet, size_t packet_size);
 float *ping_statistics(float rtt, int n);
 
-void print_ping(size_t packet_size, const char *ipv4_address,
-                struct msghdr *msgh, float *rtt);
-void print_time_exceeded(struct msghdr *msgh);
+void print_ping(t_ping *ping, float *rtt);
+void print_time_exceeded(t_ping *ping);
 void print_ping_start(t_ping *ping);
 void print_ping_statistics(t_ping *ping);
 

@@ -64,11 +64,10 @@ static void receive_message(t_ping *ping) {
 
     icmp_header =
         (struct icmphdr *)(msghdr.msg_iov->iov_base + sizeof(struct iphdr));
-    if (icmp_header->type == ICMP_TIME_EXCEEDED &&
-        ping->options & VERBOSE_FLAG) {
-      print_time_exceeded(&msghdr);
+    if (icmp_header->type == ICMP_TIME_EXCEEDED) {
+      print_time_exceeded(ping);
     } else if (icmp_header->type == ICMP_ECHOREPLY) {
-      print_ping(ping->packet_size, ping->ip_address, &msghdr, &rtt);
+      print_ping(ping, &rtt);
       ping->received++;
     }
     recv_loop = false;

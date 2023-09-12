@@ -8,29 +8,27 @@
 
 #include "ping.h"
 
-static int get_ttl(struct msghdr *msgh) {
+static int get_ttl(char *packet) {
   struct iphdr *ip_header;
 
-  ip_header = (struct iphdr *)msgh->msg_iov->iov_base;
+  ip_header = (struct iphdr *)packet;
   return ip_header->ttl;
 }
 
-static unsigned int get_sequence_number(struct msghdr *msgh) {
+static unsigned int get_sequence_number(char *packet) {
   struct icmphdr *icmp_header;
 
-  icmp_header =
-      (struct icmphdr *)(msgh->msg_iov->iov_base + sizeof(struct iphdr));
+  icmp_header = (struct icmphdr *)(packet + sizeof(struct iphdr));
   return htons(icmp_header->un.echo.sequence);
 }
 
-static float get_timestamp_diff(struct msghdr *msgh) {
+static float get_timestamp_diff(char *packet) {
   struct timeval sent_time;
   struct timeval now;
   const char *timeval;
 
   // get sent time from packet buffer
-  timeval =
-      msgh->msg_iov->iov_base + sizeof(struct iphdr) + sizeof(struct icmphdr);
+  timeval = packet + sizeof(struct iphdr) + sizeof(struct icmphdr);
   ft_memcpy(&sent_time, timeval, sizeof(struct timeval));
   gettimeofday(&now, NULL);
 
@@ -49,17 +47,16 @@ void print_ping_start(t_ping *ping) {
   printf("\n");
 }
 
-void print_ping(size_t packet_size, const char *ipv4_address,
-                struct msghdr *msgh, float *rtt) {
+void print_ping(t_ping *ping, float *rtt) {
   unsigned int sequence_number;
   int ttl;
 
-  sequence_number = get_sequence_number(msgh);
-  ttl = get_ttl(msgh);
-  *rtt = get_timestamp_diff(msgh);
+  sequence_number = get_sequence_number(ping->packet);
+  ttl = get_ttl(ping->packet);
+  *rtt = get_timestamp_diff(ping->packet);
 
-  printf("%zu bytes from %s: icmp_seq=%d ttl=%d time=%.03f ms\n", packet_size,
-         ipv4_address, sequence_number, ttl, *rtt);
+  printf("%zu bytes from %s: icmp_seq=%d ttl=%d time=%.03f ms\n",
+         ping->packet_size, ping->ip_address, sequence_number, ttl, *rtt);
 }
 
 void print_ping_statistics(t_ping *ping) {

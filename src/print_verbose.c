@@ -1,7 +1,20 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   print_verbose.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: aroque <aroque@student.42sp.org.br>        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/09/12 13:13:10 by aroque            #+#    #+#             */
+/*   Updated: 2023/09/12 13:36:26 by aroque           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "ping.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void print_iphdr(struct iphdr *ip_header) {
@@ -35,37 +48,34 @@ static void print_icmphdr(struct icmphdr *icmp_header, size_t payload_size) {
          ntohs(icmp_header->un.echo.id), ntohs(icmp_header->un.echo.sequence));
 }
 
-static void print_original_package(struct msghdr *msgh) {
-  unsigned char *og_packet;
+static void print_original_package(const char *icmp_packet) {
+  char *payload;
   struct iphdr *og_iphdr;
   struct icmphdr *og_icmphdr;
   size_t og_payload_size;
 
-  og_packet =
-      msgh->msg_iov->iov_base + sizeof(struct iphdr) + sizeof(struct icmphdr);
-
-  og_iphdr = (struct iphdr *)og_packet;
-  og_icmphdr = (struct icmphdr *)(og_packet + sizeof(struct iphdr));
-
+  payload = (char *)icmp_packet + sizeof(struct icmphdr);
+  og_iphdr = (struct iphdr *)(payload);
+  og_icmphdr = (struct icmphdr *)(payload + sizeof(struct iphdr));
   og_payload_size = ntohs(og_iphdr->tot_len) - sizeof(struct iphdr);
 
   print_iphdr(og_iphdr);
   print_icmphdr(og_icmphdr, og_payload_size);
 }
 
-void print_time_exceeded(struct msghdr *msgh) {
+void print_time_exceeded(t_ping *ping) {
   struct iphdr *ip_header;
-  char ip_address[INET_ADDRSTRLEN];
   size_t payload_size;
+  char ip_address[INET_ADDRSTRLEN];
 
-  ip_header = (struct iphdr *)msgh->msg_iov->iov_base;
-
+  ip_header = (struct iphdr *)ping->packet;
   if (!inet_ntop(AF_INET, &(ip_header->saddr), ip_address, INET_ADDRSTRLEN))
     fprintf(stderr, "ping: inet_ntop: %s\n", strerror(errno));
 
-  payload_size = sizeof(struct icmphdr) + sizeof(struct iphdr) + 8;
+  payload_size = ntohs(ip_header->tot_len) - sizeof(struct iphdr);
   printf("%zu bytes from %s: %s\n", payload_size, ip_address,
          "Time to live exceeded");
 
-  print_original_package(msgh);
+  if (ping->options & VERBOSE_FLAG)
+    print_original_package(ping->packet + sizeof(struct iphdr));
 }
