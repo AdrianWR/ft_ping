@@ -18,7 +18,7 @@ int addr_lookup(t_ping *ping) {
 
   if ((status = getaddrinfo(ping->destination, NULL, &hints,
                             &(ping->addrinfo))) != 0) {
-    if (status == EAI_AGAIN || status == EAI_NONAME)
+    if (status == EAI_AGAIN || status == EAI_NONAME || status == EAI_NODATA)
       fprintf(stderr, "ping: unknown host\n");
     else
       fprintf(stderr, "ping: %s: %s\n", ping->destination,

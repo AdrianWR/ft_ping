@@ -8,6 +8,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+// Small hack to get EAI_NODATA on Linux
+#ifndef __USE_GNU
+#define EAI_NODATA -5
+#endif
+
 #define HELP_FLAG 0x1
 #define VERBOSE_FLAG 0x2
 

@@ -66,11 +66,14 @@ static void receive_message(t_ping *ping) {
         (struct icmphdr *)(msghdr.msg_iov->iov_base + sizeof(struct iphdr));
     if (icmp_header->type == ICMP_TIME_EXCEEDED) {
       print_time_exceeded(ping);
+    } else if (icmp_header->type == ICMP_ECHO) {
+      continue;
     } else if (icmp_header->type == ICMP_ECHOREPLY) {
       print_ping(ping, &rtt);
       ping->received++;
     }
     recv_loop = false;
+
     // wait 1 second before sending next packet
     usleep(DEFAULT_USLEEP);
   }
